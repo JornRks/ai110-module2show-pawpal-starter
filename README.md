@@ -59,17 +59,32 @@ Today's Schedule — 2026-11-06
 
 ```bash
 # Run the full test suite:
-pytest
+python -m pytest
 
 # Run with coverage:
 pytest --cov
 ```
+Test Descriptions: The tests verify chronological task sorting, creation of the next daily task after completion, and detection of tasks scheduled at the same time.
+
 
 Sample test output:
 
 ```
-# Paste your pytest output here
+====================================================================== test session starts =======================================================================
+platform win32 -- Python 3.14.6, pytest-9.0.3, pluggy-1.6.0
+rootdir: C:\Users\Jorn Rutkis\Documents\ai110-module2show-pawpal-starter
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.12.1
+collected 25 items                                                                                                                                                
+
+tests\test_pawpal.py .........................                                                                                                              [100%]
+
+======================================================================= 25 passed in 0.04s =======================================================================
+
 ```
+Confidence:
+Based on the pytests I ran, my confidence sits at 4/5. This is because they all sucsessfully passed, yet not all edge cases could be covered.
 
 ## 📐 Smarter Scheduling
 
