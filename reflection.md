@@ -85,7 +85,7 @@ One change I made was implementing a (pet,task) tuple, which allows pets to stay
 
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
-
+I kept the a orginal 'more complex' sorting method, which converts preferred times into zero-padded "HH:MM" strings. AI suggested comparing time objects directly to avoid conversion, but I chose the string version to match Phase 4, step 2s format. This requires extra conversion and ignores seconds, but the performance difference is negligible for a small number of pet care tasks, and minute-level precision is sufficient for planning walks, feeding, and grooming.
 ---
 
 ## 3. AI Collaboration

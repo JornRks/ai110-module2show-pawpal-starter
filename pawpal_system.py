@@ -32,12 +32,11 @@ VALID_RECURRENCES = ("once", "daily", "weekly")
 class Task:
     """A single pet care activity.
 
-    due_date meaning depends on recurrence:
-      - "once":   the task is due from this date on until it is completed
-                  (None = due right away).
-      - "daily":  the first day the task is due (None = every day).
-      - "weekly": the first occurrence; the task repeats every 7 days
-                  after it. Required for weekly tasks.
+    Each Task object is ONE occurrence. It is due from due_date on
+    (None = due right away) until it is completed. For "daily" and "weekly"
+    tasks, completing the occurrence creates a new Task for the next one
+    (see next_occurrence), so the to-do list always holds the upcoming
+    instance and the finished ones stay as history.
     """
 
     title: str
@@ -71,24 +70,81 @@ class Task:
         for name in changes:
             setattr(self, name, getattr(updated, name))
 
-    def mark_complete(self, on_date: date) -> None:
-        """Record the task as completed on the given date."""
+    @property
+    def is_completed(self) -> bool:
+        """Whether this occurrence has been completed.
+
+        Returns:
+            True if the task has been marked complete on any date, else False.
+            Each Task is a single occurrence, so one completion finishes it.
+        """
+        return bool(self.completed_dates)
+
+    def mark_complete(self, on_date: date) -> Optional[Task]:
+        """Complete this occurrence and return the next one, if the task repeats.
+
+        This only builds the next Task; it does not add it to a pet. Use
+        Scheduler.mark_task_complete() to complete a task and store its
+        next occurrence in one step.
+
+        Args:
+            on_date: The day the task was completed.
+
+        Returns:
+            A new Task for the next occurrence (see next_occurrence) for
+            "daily" and "weekly" tasks. None for "once" tasks, and None if
+            this task was already completed, so completing twice never
+            creates duplicate occurrences.
+        """
+        if self.is_completed:
+            return None
         self.completed_dates.add(on_date)
+        return self.next_occurrence(on_date)
+
+    def next_occurrence(self, completed_on: date) -> Optional[Task]:
+        """Build a fresh, not-yet-completed copy due on the next occurrence date.
+
+        Dates are calculated with timedelta, so month ends, year ends and
+        leap days are handled correctly (Dec 31 + 1 day = Jan 1).
+
+        - daily:  completed_on + timedelta(days=1).
+        - weekly: due_date + timedelta(weeks=1), stepped forward a week at a
+          time until it is after completed_on. This keeps the weekday, so a
+          Monday task done late on Wednesday is next due the following Monday.
+
+        Args:
+            completed_on: The day this occurrence was completed.
+
+        Returns:
+            A copy of this task with the new due_date and no completion
+            history, or None if the task's recurrence is "once".
+        """
+        if self.recurrence == "daily":
+            next_due = completed_on + timedelta(days=1)
+        elif self.recurrence == "weekly":
+            next_due = self.due_date + timedelta(weeks=1)
+            while next_due <= completed_on:
+                next_due += timedelta(weeks=1)
+        else:
+            return None
+        return replace(self, due_date=next_due, completed_dates=set())
 
     def is_due(self, on_date: date) -> bool:
-        """Return True if the task still needs doing on the given date."""
-        if on_date in self.completed_dates:
-            return False
-        if self.due_date is not None and on_date < self.due_date:
-            return False
+        """Check whether this occurrence still needs doing on the given date.
 
-        if self.recurrence == "once":
-            # A one-off task is finished once it has been completed on any day.
-            return not self.completed_dates
-        if self.recurrence == "daily":
-            return True
-        # weekly: same weekday as the anchor date
-        return (on_date - self.due_date).days % 7 == 0
+        An uncompleted occurrence stays due after its due date, so missed
+        tasks carry over as overdue instead of silently disappearing.
+
+        Args:
+            on_date: The day to check.
+
+        Returns:
+            False if the task is completed or its due_date is after on_date;
+            True otherwise (a task with no due_date is due right away).
+        """
+        if self.is_completed:
+            return False
+        return self.due_date is None or on_date >= self.due_date
 
 
 @dataclass
@@ -195,6 +251,141 @@ class Scheduler:
             )
 
         return sorted(tasks, key=key)
+
+    def sort_by_time(
+        self, tasks: list[tuple[Pet, Task]]
+    ) -> list[tuple[Pet, Task]]:
+        """Sort (pet, task) pairs by preferred time, earliest first.
+
+        Uses sorted() with a lambda key that turns each preferred_time into
+        an "HH:MM" string. Because hours and minutes are zero-padded,
+        comparing the strings alphabetically gives the same order as
+        comparing the times ("08:30" < "13:05"). Tasks with no preferred
+        time get "24:00", which sorts after any real time, so they land at
+        the end. sorted() is stable, so tasks with the same time keep their
+        original order. Runs in O(n log n).
+
+        Args:
+            tasks: (pet, task) pairs, e.g. from Owner.get_all_tasks() or
+                filter_tasks(). The input list is not modified.
+
+        Returns:
+            A new list of the same pairs, ordered by preferred time.
+
+        Example:
+            >>> [t.title for _, t in scheduler.sort_by_time(owner.get_all_tasks())]
+            ['Morning walk', 'Feed Luna', 'Evening walk', 'Clean litter box']
+        """
+        return sorted(
+            tasks,
+            key=lambda pair: (
+                pair[1].preferred_time.strftime("%H:%M")
+                if pair[1].preferred_time is not None
+                else "24:00"
+            ),
+        )
+
+    def filter_tasks(
+        self,
+        pet_name: Optional[str] = None,
+        completed: Optional[bool] = None,
+        on_date: Optional[date] = None,
+    ) -> list[tuple[Pet, Task]]:
+        """Return the owner's (pet, task) pairs that match every given filter.
+
+        Filters are optional and combine with AND, so
+        filter_tasks(pet_name="Mochi", completed=False) gives Mochi's
+        unfinished tasks. With no filters, every task is returned.
+
+        Args:
+            pet_name: Keep only this pet's tasks (case-insensitive).
+                None means all pets.
+            completed: True keeps only tasks completed on on_date; False
+                keeps only tasks not completed on on_date (this includes
+                upcoming occurrences of recurring tasks). None skips the
+                status filter.
+            on_date: The day completion is checked against. Defaults to today.
+
+        Returns:
+            A new list of matching (pet, task) pairs, in pet then task order.
+        """
+        on_date = on_date or date.today()
+        results = []
+        for pet, task in self.owner.get_all_tasks():
+            if pet_name is not None and pet.name.lower() != pet_name.lower():
+                continue
+            if completed is not None and (on_date in task.completed_dates) != completed:
+                continue
+            results.append((pet, task))
+        return results
+
+    def mark_task_complete(
+        self, pet: Pet, task: Task, on_date: Optional[date] = None
+    ) -> Optional[Task]:
+        """Complete a task and, if it repeats, add its next occurrence to the pet.
+
+        Calls Task.mark_complete(), then stores the returned next occurrence
+        on the pet with Pet.add_task(). Completing an already-completed task
+        does nothing, so no duplicates are created.
+
+        Args:
+            pet: The pet that owns the task.
+            task: The task to complete.
+            on_date: The day it was completed. Defaults to today.
+
+        Returns:
+            The newly created next-occurrence Task (due tomorrow for "daily",
+            next week on the same weekday for "weekly"), or None if nothing
+            new was created.
+        """
+        next_task = task.mark_complete(on_date or date.today())
+        if next_task is not None:
+            pet.add_task(next_task)
+        return next_task
+
+    def conflict_warnings(self, on_date: date) -> list[str]:
+        """Return warning messages for due tasks whose preferred times overlap.
+
+        Lightweight check: each due task with a preferred_time becomes a
+        window from preferred_time to preferred_time + duration, and
+        detect_conflicts() finds overlapping windows. It works for tasks of
+        the same pet and of different pets. Windows that only touch (one
+        ends exactly when the next starts) are not conflicts. Tasks with no
+        preferred time are ignored.
+
+        It never raises and never changes any data, so callers can just
+        print the messages. generate_schedule() will still move one of the
+        clashing tasks to the next free slot.
+
+        Args:
+            on_date: The day whose due tasks are checked.
+
+        Returns:
+            One "WARNING: ..." string per overlapping pair, naming both tasks,
+            their times, and the pet(s) involved. An empty list means no
+            conflicts.
+        """
+        windows = []
+        for pet, task in self.get_due_tasks(on_date):
+            if task.preferred_time is None:
+                continue
+            start = datetime.combine(on_date, task.preferred_time)
+            end = start + timedelta(minutes=task.duration_minutes)
+            windows.append({"pet": pet, "task": task, "start": start, "end": end})
+
+        warnings = []
+        for a, b in self.detect_conflicts(windows):
+            who = (
+                f"both for {a['pet'].name}"
+                if a["pet"] is b["pet"]
+                else f"{a['pet'].name} and {b['pet'].name}"
+            )
+            warnings.append(
+                f"WARNING: '{a['task'].title}' ({a['start']:%H:%M}-{a['end']:%H:%M}) "
+                f"overlaps '{b['task'].title}' ({b['start']:%H:%M}-{b['end']:%H:%M}), "
+                f"{who}."
+            )
+        return warnings
 
     def detect_conflicts(self, schedule: list[dict]) -> list[tuple[dict, dict]]:
         """Return pairs of scheduled entries whose times overlap (touching is not a conflict)."""
