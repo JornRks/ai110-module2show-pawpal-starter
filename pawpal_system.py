@@ -2,12 +2,28 @@
 
 Skeleton generated from diagrams/uml.mmd. Method bodies are stubs to be
 implemented later.
+
+Scheduler entry shapes (plain dicts, so the design stays at four classes):
+
+    scheduled entry: {
+        "pet": Pet,
+        "task": Task,
+        "start": datetime,
+        "end": datetime,
+        "reason": str,   # why the task was placed at this time
+    }
+
+    skipped entry: {
+        "pet": Pet,
+        "task": Task,
+        "reason": str,   # why the task was left out
+    }
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, time
+from datetime import date, datetime, time
 from typing import Optional
 
 
@@ -21,14 +37,14 @@ class Task:
     preferred_time: Optional[time] = None
     due_date: Optional[date] = None
     recurrence: str = "once"  # "once", "daily", or "weekly"
-    completed: bool = False
+    completed_dates: set[date] = field(default_factory=set)
 
     def update_details(self, **changes) -> None:
         """Update one or more of the task's fields."""
         pass
 
-    def mark_complete(self) -> None:
-        """Mark the task as completed."""
+    def mark_complete(self, on_date: date) -> None:
+        """Record the task as completed on the given date."""
         pass
 
     def is_due(self, on_date: date) -> bool:
@@ -91,23 +107,31 @@ class Scheduler:
     def __init__(self, owner: Owner, day_start: time = time(8, 0)) -> None:
         self.owner = owner
         self.day_start = day_start
+        self.scheduled: list[dict] = []  # scheduled entries (see module docstring)
+        self.skipped: list[dict] = []  # skipped entries (see module docstring)
 
-    def get_due_tasks(self, on_date: date) -> list[Task]:
-        """Collect all tasks across the owner's pets that are due on the date."""
+    def get_due_tasks(self, on_date: date) -> list[tuple[Pet, Task]]:
+        """Collect (pet, task) pairs for every task due on the date."""
         pass
 
-    def sort_tasks(self, tasks: list[Task]) -> list[Task]:
-        """Return the tasks sorted by priority."""
+    def sort_tasks(
+        self, tasks: list[tuple[Pet, Task]]
+    ) -> list[tuple[Pet, Task]]:
+        """Return the (pet, task) pairs sorted by task priority."""
         pass
 
-    def detect_conflicts(self, schedule: list) -> list:
-        """Return any scheduled tasks whose times overlap."""
+    def detect_conflicts(self, schedule: list[dict]) -> list[tuple[dict, dict]]:
+        """Return pairs of scheduled entries whose start/end times overlap."""
         pass
 
-    def generate_schedule(self, on_date: date) -> list:
-        """Select and schedule tasks using available time and preferences."""
+    def generate_schedule(self, on_date: date) -> list[dict]:
+        """Fill self.scheduled and self.skipped for the date.
+
+        Returns the scheduled entries.
+        """
         pass
 
     def explain_schedule(self) -> str:
-        """Explain why tasks were included or skipped."""
+        """Explain why tasks were included or skipped, using
+        self.scheduled and self.skipped."""
         pass

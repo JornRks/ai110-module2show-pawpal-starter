@@ -28,21 +28,25 @@ classDiagram
         +Optional~time~ preferred_time
         +date due_date
         +str recurrence
-        +bool completed
+        +set~date~ completed_dates
         +update_details(...) None
-        +mark_complete() None
+        +mark_complete(on_date: date) None
         +is_due(on_date: date) bool
     }
 
     class Scheduler {
         +Owner owner
         +time day_start
-        +get_due_tasks(on_date: date) list~Task~
-        +sort_tasks(tasks: list~Task~) list~Task~
-        +detect_conflicts(schedule: list) list
-        +generate_schedule(on_date: date) list
+        +list~dict~ scheduled
+        +list~dict~ skipped
+        +get_due_tasks(on_date: date) list~tuple~
+        +sort_tasks(tasks: list~tuple~) list~tuple~
+        +detect_conflicts(schedule: list~dict~) list~tuple~
+        +generate_schedule(on_date: date) list~dict~
         +explain_schedule() str
     }
+
+    note for Scheduler "get_due_tasks / sort_tasks use (pet, task) pairs\nscheduled entry: pet, task, start (datetime), end (datetime), reason\nskipped entry: pet, task, reason"
 
     Owner "1" o-- "0..*" Pet : owns
     Pet "1" *-- "0..*" Task : has
