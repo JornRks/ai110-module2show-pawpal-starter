@@ -9,12 +9,11 @@
 2. A user should be able to create and track their pet care tasks (walking, grooming, feeding, etc.) and the duratiion/priority of said tasks.
 3. Users should be able to generate a pet care schedule, day by day, which incldues times, tasks, task priority, and prefrences.
 - What classes did you include, and what responsibilities did you assign to each?
-My 4 main classes are gonna be owner, pet, task, and scheduler. Owner will store personal information abt the owner and their prefrences. ADDED - should own or reference one or more Pet objects.
-Pet will store information about an individual pet, such as food, favorite locations, walk preferences, toy prefrences, etc. ADDED -  should receive an owner/pet context and their tasks/preferences.
-Task will represent activitys that are to be done with the pet, such as walking, feeding, grooming, etc. ADDED - should include scheduling-relevant fields such as preferred time, recurrence, or completion status.
-Scheduler will generate a daily car plan using priorities, durations, time constraints/prefered times. ADDED - A generated schedule/plan object would clarify the relationship between scheduling input and displayed output.
+My 4 main classes are gonna be owner, pet, task, and scheduler. Owner stores the owner’s name, available time, preferences, and list of pets.
+Pet stores each pet’s name, species, preferences, and care tasks. 
+Task represents an activity like walking, feeding, or grooming and stores its duration, priority, preferred time, due date, recurrence, and completion status. 
+Scheduler uses the owner’s information and their pets’ tasks to generate a daily care plan, prioritize tasks, check for scheduling conflicts, and explain scheduling decisions.
 
-### Building Blocks
 
 #### Owner
 Attributes:
@@ -27,11 +26,6 @@ Methods:
 - add_pet(): adds a pet to the owner's list
 - update_preferences(): updates the owner's preferences
 - update_available_time(): changes the time available for pet care
-
-**b. Design changes**
-
-- Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
 
 #### Pet
 Attributes:
@@ -72,6 +66,13 @@ Methods:
 - generate_schedule(): selects and schedules tasks using available time and preferences
 - explain_schedule(): explains why tasks were included or skipped
 ---
+
+**b. Design changes**
+
+- Did your design change during implementation?
+Yes it did, my coding agent recognized a few logic/relationships errors that needed fixing.
+- If yes, describe at least one change and why you made it.
+One change I made was implementing a (pet,task) tuple, which allows pets to stay with their respective tasks. Previoulsy when multiple tasks got merged, it was not possible to tell which tasks went with what pets.
 
 ## 2. Scheduling Logic and Tradeoffs
 

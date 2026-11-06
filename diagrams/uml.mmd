@@ -9,6 +9,7 @@ classDiagram
         +add_pet(pet: Pet) None
         +update_preferences(preferences: dict) None
         +update_available_time(minutes: int) None
+        +get_all_tasks() list~tuple~
     }
 
     class Pet {
@@ -44,6 +45,8 @@ classDiagram
         +detect_conflicts(schedule: list~dict~) list~tuple~
         +generate_schedule(on_date: date) list~dict~
         +explain_schedule() str
+        -_first_free_start(wanted: datetime, duration_minutes: int) datetime
+        -_placement_reason(task: Task, label: str, start: datetime) str
     }
 
     note for Scheduler "get_due_tasks / sort_tasks use (pet, task) pairs\nscheduled entry: pet, task, start (datetime), end (datetime), reason\nskipped entry: pet, task, reason"
