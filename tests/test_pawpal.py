@@ -15,7 +15,7 @@ def test_mark_complete_changes_task_status():
 
 
 def test_add_task_increases_pet_task_count():
-    pet = Pet("Mochi", "dog")
+    pet = Pet("Lucy", "dog")
     assert len(pet.tasks) == 0
 
     pet.add_task(Task("Feed breakfast", 10))
@@ -28,13 +28,13 @@ def _owner_with_tasks():
     from pawpal_system import Owner
 
     owner = Owner("Jorn", available_minutes=120)
-    dog, cat = Pet("Mochi", "dog"), Pet("Luna", "cat")
+    dog, cat = Pet("Lucy", "dog"), Pet("Titus", "cat")
     owner.add_pet(dog)
     owner.add_pet(cat)
     dog.add_task(Task("Evening walk", 30, preferred_time=time(18, 30)))
     cat.add_task(Task("Litter box", 10))  # no preferred time
     dog.add_task(Task("Morning walk", 30, preferred_time=time(8, 0)))
-    cat.add_task(Task("Feed Luna", 10, preferred_time=time(13, 5)))
+    cat.add_task(Task("Feed Titus", 10, preferred_time=time(13, 5)))
     return owner
 
 
@@ -46,7 +46,7 @@ def test_sort_by_time_orders_earliest_first_and_untimed_last():
 
     titles = [t.title for _, t in scheduler.sort_by_time(owner.get_all_tasks())]
 
-    assert titles == ["Morning walk", "Feed Luna", "Evening walk", "Litter box"]
+    assert titles == ["Morning walk", "Feed Titus", "Evening walk", "Litter box"]
 
 
 def test_filter_tasks_by_pet_name_and_completion():
@@ -57,11 +57,11 @@ def test_filter_tasks_by_pet_name_and_completion():
     today = date(2026, 11, 6)
     owner.pets[0].tasks[0].mark_complete(today)  # Evening walk
 
-    mochi = [t.title for _, t in scheduler.filter_tasks(pet_name="MOCHI")]
+    lucy = [t.title for _, t in scheduler.filter_tasks(pet_name="LUCY")]
     done = [t.title for _, t in scheduler.filter_tasks(completed=True, on_date=today)]
-    todo = scheduler.filter_tasks(pet_name="Mochi", completed=False, on_date=today)
+    todo = scheduler.filter_tasks(pet_name="Lucy", completed=False, on_date=today)
 
-    assert mochi == ["Evening walk", "Morning walk"]
+    assert lucy == ["Evening walk", "Morning walk"]
     assert done == ["Evening walk"]
     assert [t.title for _, t in todo] == ["Morning walk"]
 
@@ -70,7 +70,7 @@ def test_completing_daily_task_creates_next_day_occurrence():
     from pawpal_system import Owner, Scheduler
 
     owner = Owner("Jorn")
-    pet = Pet("Mochi", "dog")
+    pet = Pet("Lucy", "dog")
     owner.add_pet(pet)
     today = date(2026, 11, 6)
     walk = Task("Walk", 30, recurrence="daily", due_date=today)
@@ -101,7 +101,7 @@ def test_conflict_warnings_flag_same_time_tasks():
     from pawpal_system import Owner, Scheduler
 
     owner = Owner("Jorn", available_minutes=60)
-    dog, cat = Pet("Mochi", "dog"), Pet("Luna", "cat")
+    dog, cat = Pet("Lucy", "dog"), Pet("Titus", "cat")
     owner.add_pet(dog)
     owner.add_pet(cat)
     dog.add_task(Task("Meds", 5, preferred_time=time(9, 0)))
@@ -126,7 +126,7 @@ DAY = date(2026, 11, 6)
 
 
 def make_owner(minutes=120, **pet_tasks):
-    """Build an owner with one pet per keyword, e.g. make_owner(Mochi=[task, ...])."""
+    """Build an owner with one pet per keyword, e.g. make_owner(Lucy=[task, ...])."""
     owner = Owner("Jorn", available_minutes=minutes)
     for name, tasks in pet_tasks.items():
         pet = Pet(name, "dog")
@@ -139,7 +139,7 @@ def make_owner(minutes=120, **pet_tasks):
 # Sorting
 
 def test_sort_by_time_keeps_original_order_for_ties_and_handles_empty():
-    pet = Pet("Mochi", "dog")
+    pet = Pet("Lucy", "dog")
     a = Task("A", 10, preferred_time=time(9, 0))
     b = Task("B", 10, preferred_time=time(9, 0))
     scheduler = Scheduler(make_owner())
@@ -152,7 +152,7 @@ def test_sort_by_time_keeps_original_order_for_ties_and_handles_empty():
 
 
 def test_sort_tasks_orders_by_priority_before_time():
-    owner = make_owner(Mochi=[
+    owner = make_owner(Lucy=[
         Task("Low early", 10, "low", preferred_time=time(8, 0)),
         Task("High untimed", 10, "high"),
         Task("Medium", 10, "medium", preferred_time=time(9, 0)),
@@ -196,7 +196,7 @@ def test_daily_next_occurrence_crosses_year_end_and_copies_fields():
 
 def test_completing_weekly_task_twice_creates_only_one_next_occurrence():
     task = Task("Bath", 20, recurrence="weekly", due_date=date(2026, 11, 2))
-    owner = make_owner(Mochi=[task])
+    owner = make_owner(Lucy=[task])
     pet = owner.pets[0]
     scheduler = Scheduler(owner)
 
@@ -214,29 +214,29 @@ def test_weekly_task_without_due_date_is_rejected():
 
 def test_conflict_warnings_catch_partial_overlap_and_containment():
     owner = make_owner(
-        Mochi=[Task("Long walk", 60, preferred_time=time(9, 0)),
+        Lucy=[Task("Long walk", 60, preferred_time=time(9, 0)),
                Task("Meds", 5, preferred_time=time(9, 15))],  # inside the walk
-        Luna=[Task("Play", 30, preferred_time=time(9, 45))],  # overlaps end of walk
+        Titus=[Task("Play", 30, preferred_time=time(9, 45))],  # overlaps end of walk
     )
 
     warnings = Scheduler(owner).conflict_warnings(DAY)
 
     assert len(warnings) == 2
     assert "Long walk" in warnings[0] and "Meds" in warnings[0]
-    assert "both for Mochi" in warnings[0]
+    assert "both for Lucy" in warnings[0]
     assert "Long walk" in warnings[1] and "Play" in warnings[1]
-    assert "Mochi and Luna" in warnings[1]
+    assert "Lucy and Titus" in warnings[1]
 
 
 def test_three_tasks_at_same_time_give_one_warning_per_pair():
-    owner = make_owner(Mochi=[Task(n, 10, preferred_time=time(9, 0)) for n in "ABC"])
+    owner = make_owner(Lucy=[Task(n, 10, preferred_time=time(9, 0)) for n in "ABC"])
     assert len(Scheduler(owner).conflict_warnings(DAY)) == 3
 
 
 def test_conflict_warnings_ignore_untimed_completed_and_future_tasks():
     done = Task("Done", 10, preferred_time=time(9, 0))
     done.mark_complete(DAY)
-    owner = make_owner(Mochi=[
+    owner = make_owner(Lucy=[
         Task("Walk", 10, preferred_time=time(9, 0)),
         done,
         Task("Tomorrow", 10, preferred_time=time(9, 0), due_date=date(2026, 11, 7)),
@@ -246,7 +246,7 @@ def test_conflict_warnings_ignore_untimed_completed_and_future_tasks():
 
 
 def test_generate_schedule_moves_clashing_task_to_next_free_slot():
-    owner = make_owner(Mochi=[Task("Meds", 20, preferred_time=time(9, 0)),
+    owner = make_owner(Lucy=[Task("Meds", 20, preferred_time=time(9, 0)),
                               Task("Feed", 10, preferred_time=time(9, 0))])
     scheduler = Scheduler(owner)
 
@@ -269,7 +269,7 @@ def test_filter_tasks_unknown_pet_is_empty_and_no_filters_returns_all():
 
 def test_filter_completion_is_checked_against_on_date():
     task = Task("Vet visit", 60)
-    owner = make_owner(Mochi=[task])
+    owner = make_owner(Lucy=[task])
     task.mark_complete(date(2026, 11, 5))
     scheduler = Scheduler(owner)
 
@@ -281,7 +281,7 @@ def test_filter_completion_is_checked_against_on_date():
 # Empty lists and available time
 
 def test_generate_schedule_with_no_tasks_is_empty():
-    for owner in (Owner("Empty", 60), make_owner(Mochi=[])):
+    for owner in (Owner("Empty", 60), make_owner(Lucy=[])):
         scheduler = Scheduler(owner)
         assert scheduler.generate_schedule(DAY) == []
         assert scheduler.skipped == []
@@ -289,7 +289,7 @@ def test_generate_schedule_with_no_tasks_is_empty():
 
 
 def test_zero_available_minutes_skips_everything_with_reason():
-    owner = make_owner(0, Mochi=[Task("Walk", 30), Task("Feed", 10)])
+    owner = make_owner(0, Lucy=[Task("Walk", 30), Task("Feed", 10)])
     scheduler = Scheduler(owner)
 
     assert scheduler.generate_schedule(DAY) == []
@@ -298,7 +298,7 @@ def test_zero_available_minutes_skips_everything_with_reason():
 
 
 def test_time_limit_keeps_higher_priority_and_allows_exact_fit():
-    owner = make_owner(30, Mochi=[Task("Low", 15, "low"),
+    owner = make_owner(30, Lucy=[Task("Low", 15, "low"),
                                   Task("High", 20, "high"),
                                   Task("Medium", 10, "medium")])  # fits exactly in the last 10
     scheduler = Scheduler(owner)
@@ -311,7 +311,7 @@ def test_time_limit_keeps_higher_priority_and_allows_exact_fit():
 
 
 def test_generate_schedule_handles_early_future_and_late_tasks():
-    owner = make_owner(240, Mochi=[
+    owner = make_owner(240, Lucy=[
         Task("Early", 10, preferred_time=time(6, 0)),
         Task("Future", 10, due_date=date(2026, 11, 7)),
         Task("Late", 60, preferred_time=time(23, 30)),

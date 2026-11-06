@@ -1,0 +1,73 @@
+classDiagram
+    %% PawPal+ final class design (matches pawpal_system.py after Phase 5).
+    %% Changes from uml.mmd are marked with "NEW" / "CHANGED" comments.
+
+    class Owner {
+        +str name
+        +int available_minutes
+        +dict preferences
+        +list~Pet~ pets
+        +add_pet(pet: Pet) None
+        +update_preferences(preferences: dict) None
+        +update_available_time(minutes: int) None
+        +get_all_tasks() list~tuple~
+    }
+
+    class Pet {
+        +str name
+        +str species
+        +dict preferences
+        +list~Task~ tasks
+        +add_task(task: Task) None
+        +remove_task(task: Task) None
+        +update_info(name, species, preferences) None
+    }
+
+    class Task {
+        <<dataclass>>
+        +str title
+        +int duration_minutes
+        +str priority
+        +Optional~time~ preferred_time
+        +Optional~date~ due_date
+        +str recurrence
+        +set~date~ completed_dates
+        +bool is_completed
+        -post_init() None
+        +update_details(changes) None
+        +mark_complete(on_date: date) Optional~Task~
+        +next_occurrence(completed_on: date) Optional~Task~
+        +is_due(on_date: date) bool
+    }
+    %% CHANGED: due_date is Optional, mark_complete returns the next occurrence.
+    %% NEW: is_completed (property), next_occurrence, post_init = __post_init__ validation.
+
+    class Scheduler {
+        +Owner owner
+        +time day_start
+        +list~dict~ scheduled
+        +list~dict~ skipped
+        +get_due_tasks(on_date: date) list~tuple~
+        +sort_tasks(tasks: list~tuple~) list~tuple~
+        +sort_by_time(tasks: list~tuple~) list~tuple~
+        +filter_tasks(pet_name, completed, on_date) list~tuple~
+        +mark_task_complete(pet: Pet, task: Task, on_date) Optional~Task~
+        +conflict_warnings(on_date: date) list~str~
+        +detect_conflicts(schedule: list~dict~) list~tuple~
+        +generate_schedule(on_date: date) list~dict~
+        +explain_schedule() str
+        -_first_free_start(wanted: datetime, duration_minutes: int) datetime
+        -_placement_reason(task: Task, label: str, start: datetime) str
+    }
+    %% NEW: sort_by_time, filter_tasks, mark_task_complete, conflict_warnings.
+
+    note for Task "priority: low | medium | high\nrecurrence: once | daily | weekly (weekly needs due_date)\nEach Task is ONE occurrence; completing a repeating task\ncreates the next one via next_occurrence()"
+
+    note for Scheduler "Works on (pet, task) pairs from Owner.get_all_tasks()\nscheduled entry: pet, task, start, end, reason\nskipped entry: pet, task, reason\nconflict_warnings() uses detect_conflicts() on preferred-time windows"
+
+    Owner "1" o-- "0..*" Pet : owns
+    Pet "1" *-- "0..*" Task : has
+    Scheduler --> Owner : schedules for / reads tasks via get_all_tasks()
+    Scheduler ..> Pet : adds next occurrence (mark_task_complete)
+    Scheduler ..> Task : sorts, filters, schedules, completes
+    Task ..> Task : next_occurrence() creates

@@ -79,7 +79,9 @@ One change I made was implementing a (pet,task) tuple, which allows pets to stay
 **a. Constraints and priorities**
 
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
+The constraints my scheduler follows are: owners available time, task duration, priority, due date, completion status, and perferred start time. It prioritizes high priority tasks and moves overlapping tasks to a available times. Tasks that cannot be fit in the owners available time slot are skipped but explained in the app.
 - How did you decide which constraints mattered most?
+I chose that available time and task priority are what matter most, as the planner was created to aim busy pet owners, and it had to be realistic. This meant the most important tasks needed to be prioritized and start times needed to be flexable to fit an owners available time slot. 
 
 **b. Tradeoffs**
 
@@ -93,12 +95,18 @@ I kept the a orginal 'more complex' sorting method, which converts preferred tim
 **a. How you used AI**
 
 - How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
+I utalized Claude in VS Code to brainstrom during my design process, and then eventually turn these ideas into a Mermaid UML design. Claude also helped me generate my class skeletons, come up with and implement more efficent scheduling logic, review my relationships between my proposed/developed classes, and generate my automated pytests. 
+I would say the most useful/effective features were my agents ability to creat effective and comprehensive pytests for my testing phase. 
+Having seperate chats also allowed me to stay very organized as my core implementation, algorithmic planning, and testing phases were all in seperate chats. This ensured my agent never got 'confused' and interacted with other files when it shouldnt have.
 - What kinds of prompts or questions were most helpful?
+The most helpful prompts were ones that explained what the agent was doing, along with why it was doing it. For example, when I asked Claude to review my algorthmic methods, it explained what changes should be made, and in doing so, provided explanations as to why these improved algorthims were better and what they were doing for the program. This allowed me to actually learn from the agent. 
 
 **b. Judgment and verification**
 
 - Describe one moment where you did not accept an AI suggestion as-is.
+One of these moments was when Claude suggested I change my "HH:MM" string-based sorting method. It was suggested to compare time-objects directly. While this slightly imrpoved efficency and visibilty (of code/what its doing) I chose to keep the orginal as it was mentioned in Phase 4, part 2.
 - How did you evaluate or verify what the AI suggested?
+I evaluated the suggestion by comparing both versions and reviewing Claudes explanation of  behavior. The alternative avoids string conversion and considers seconds, but minute-level precision is good enough for the app. I also checked the sorting test results to verify that the original method returned tasks in chronological order.
 
 ---
 
@@ -108,11 +116,13 @@ I kept the a orginal 'more complex' sorting method, which converts preferred tim
 
 - What behaviors did you test?
 - Why were these tests important?
+I tested whether tasks are sorted chronologically, completing a daily task creates a new task for the following day, and tasks scheduled at the same time trigger a conflict warning. These tests were important because incorrect ordering, missing recurring tasks, or unnoticed conflicts could make the daily plan unreliable.
 
 **b. Confidence**
 
 - How confident are you that your scheduler works correctly?
 - What edge cases would you test next if you had more time?
+I would rate confidence level a 4 out of 5 because all tests in my suite passed. However, passing tests does not guarantee that every situation is covered. With more time, I would expand testing around tasks near midnight, recurring tasks across month and year boundaries, and repeated button clicks in Streamlit to check for accidental duplicates.
 
 ---
 
@@ -120,12 +130,12 @@ I kept the a orginal 'more complex' sorting method, which converts preferred tim
 
 **a. What went well**
 
-- What part of this project are you most satisfied with?
+- The part of this projected that went well, and what im pleased with is how smoothly I was able to trasnfer from an idea/very small baseline to pawpal_system logic layer. Giving Claude my ideas and classes, then generating a Mermaid UML, and then a class skeleton was very simple. This also allowed me to learn how proper program development should look using an agent and will be carried with me in the future.
 
 **b. What you would improve**
 
-- If you had another iteration, what would you improve or redesign?
+- One thing I would improve is schedule reccomendations that could be made by the scheduler. Rather than flat out skipping/excluding tasks that dont fit in the schedule, the scheduler could reccomend shortening other tasks marginally to fit in the skipped task.
 
 **c. Key takeaway**
 
-- What is one important thing you learned about designing systems or working with AI on this project?
+- My key takeaway from this project is the proper workflow when designing, building, and integrating a program while using an AI agent. Like mentioned in the 'What went well' section, this project allowed me to apply a coding agent and also learn from it during the building process. I also learned that I am responsible for guiding the design, reviewing AI suggestions, and verifying that the final program meets the requirements. This will enable me to produce more impressive programs from scratch in the future using these skills. 

@@ -23,8 +23,8 @@ def main():
     # Create an owner and two pets.
     owner = Owner(name="Jorn", available_minutes=120)
 
-    dog = Pet(name="Mochi", species="dog")
-    cat = Pet(name="Luna", species="cat")
+    dog = Pet(name="Lucy", species="dog")
+    cat = Pet(name="Titus", species="cat")
 
     owner.add_pet(dog)
     owner.add_pet(cat)
@@ -32,17 +32,17 @@ def main():
     # Add tasks deliberately OUT of time order to test sorting.
     evening_walk = Task("Evening walk", 30, "high", preferred_time=time(18, 30),
                         due_date=today, recurrence="daily")
-    feed_luna = Task("Feed Luna", 10, "high", preferred_time=time(9, 0),
+    feed_luna = Task("Feed Titus", 10, "high", preferred_time=time(9, 0),
                      due_date=today, recurrence="daily")
-    brush_mochi = Task("Brush Mochi", 15, "medium", preferred_time=time(13, 5),
+    brush_mochi = Task("Brush Lucy", 15, "medium", preferred_time=time(13, 5),
                        due_date=today, recurrence="weekly")
     litter = Task("Clean litter box", 10, "medium", due_date=today)  # once, no time
     morning_walk = Task("Morning walk", 30, "high", preferred_time=time(8, 0),
                         due_date=today, recurrence="daily")
 
     # Two tasks at the SAME time to test conflict detection:
-    # one for a different pet (overlaps Feed Luna), one for the same pet (overlaps Evening walk).
-    give_meds = Task("Give Mochi meds", 5, "high", preferred_time=time(9, 0), due_date=today)
+    # one for a different pet (overlaps Feed Titus), one for the same pet (overlaps Evening walk).
+    give_meds = Task("Give Lucy meds", 5, "high", preferred_time=time(9, 0), due_date=today)
     play_fetch = Task("Play fetch", 20, "low", preferred_time=time(18, 45), due_date=today)
 
     dog.add_task(evening_walk)
@@ -81,7 +81,7 @@ def main():
     again = scheduler.mark_task_complete(dog, morning_walk, today)
     print(f"  Morning walk completed again -> new task created? {again is not None}")
 
-    print_tasks("Only Mochi's tasks", scheduler.filter_tasks(pet_name="mochi"))
+    print_tasks("Only Lucy's tasks", scheduler.filter_tasks(pet_name="lucy"))
     print_tasks("Completed today", scheduler.filter_tasks(completed=True, on_date=today))
     print_tasks(
         "Not completed yet, incl. upcoming occurrences (sorted by time)",

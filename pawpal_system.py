@@ -274,7 +274,7 @@ class Scheduler:
 
         Example:
             >>> [t.title for _, t in scheduler.sort_by_time(owner.get_all_tasks())]
-            ['Morning walk', 'Feed Luna', 'Evening walk', 'Clean litter box']
+            ['Morning walk', 'Feed Titus', 'Evening walk', 'Clean litter box']
         """
         return sorted(
             tasks,
@@ -294,7 +294,7 @@ class Scheduler:
         """Return the owner's (pet, task) pairs that match every given filter.
 
         Filters are optional and combine with AND, so
-        filter_tasks(pet_name="Mochi", completed=False) gives Mochi's
+        filter_tasks(pet_name="Lucy", completed=False) gives Lucy's
         unfinished tasks. With no filters, every task is returned.
 
         Args:
